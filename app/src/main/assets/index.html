@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qada Tracker</title>
+<style>
+  :root{
+    --bg-top: #17343d;
+    --bg: #0e2027;
+    --bg-deep: #0a171d;
+    --card: #16323a;
+    --card2: #1c3d46;
+    --accent: #c9a227;
+    --accent-light: #e8c468;
+    --text: #f3ecdc;
+    --text-muted: #8fa9af;
+    --divider: rgba(201,162,39,0.28);
+    --done: #4e8b6b;
+    --done-bg: rgba(78,139,107,0.14);
+    --active: #d3903f;
+    --active-bg: rgba(211,144,63,0.14);
+    --missed: #c17a4f;
+    --missed-bg: rgba(193,122,79,0.10);
+    --err: #c1614f;
+  }
+  body.light-theme{
+    --bg-top: #fff8e7;
+    --bg: #f4ecd8;
+    --bg-deep: #ece0c4;
+    --card: #ffffff;
+    --card2: #fdf6e6;
+    --accent: #a9791f;
+    --accent-light: #8a6416;
+    --text: #2b2013;
+    --text-muted: #6b5d43;
+    --divider: rgba(169,121,31,0.28);
+    --done: #3f7a5a;
+    --done-bg: rgba(63,122,90,0.12);
+    --active: #b5731f;
+    --active-bg: rgba(181,115,31,0.12);
+    --missed: #a85a37;
+    --missed-bg: rgba(168,90,55,0.10);
+    --err: #a8412f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(ellipse at 50% -10%, var(--bg-top) 0%, var(--bg) 45%, var(--bg-deep) 100%);
+    min-height:100vh;
+    font-family: 'Tajawal', 'Segoe UI', system-ui, sans-serif;
+    color:var(--text);
+    padding: 28px 16px 60px;
+    display:flex;
+    justify-content:center;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .wrap{ width:100%; max-width:480px; }
+
+  .controls-row{ display:flex; justify-content:center; gap:10px; margin-bottom:18px; }
+  .ctrl-btn{
+    display:flex; align-items:center; gap:6px;
+    border:1px solid var(--divider); background: rgba(255,255,255,0.03);
+    color: var(--text); border-radius: 999px; padding: 8px 14px;
+    font-family: inherit; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .ctrl-btn:active{ transform: scale(0.96); }
+  .ctrl-btn svg{ width:15px; height:15px; }
+
+  header{ text-align:center; margin-bottom: 6px; }
+  .moon{ width:34px; height:34px; margin:0 auto 10px; color: var(--accent-light); }
+  h1{
+    font-family:'Amiri', 'Georgia', serif;
+    font-weight:700;
+    font-size: 30px;
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+    color: var(--accent-light);
+  }
+  .sub{
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height:1.9;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+  .date{
+    text-align:center;
+    color: var(--accent);
+    font-size:13px;
+    margin: 14px 0 2px;
+    font-weight:500;
+    opacity:0.85;
+  }
+  .loc-line{
+    text-align:center;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    margin-bottom: 4px;
+  }
+
+  .divider{ display:flex; align-items:center; gap:10px; margin: 26px 0 18px; opacity:0.9; color: var(--accent); }
+  .divider .line{ flex:1; height:1px; background: var(--divider); }
+  .divider svg{ width:20px; height:20px; flex-shrink:0; }
+
+  .card{
+    background: linear-gradient(180deg, var(--card), var(--card2));
+    border: 1px solid var(--divider);
+    border-radius: 18px;
+    padding: 18px 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    animation: rise 0.5s ease both;
+  }
+  .card + .card{ margin-top:16px; }
+  @keyframes rise{ from{opacity:0; transform: translateY(8px);} to{opacity:1; transform:none;} }
+  @media (prefers-reduced-motion: reduce){ .card{animation:none;} }
+
+  .card-title{
+    font-family:'Amiri', 'Georgia', serif;
+    font-size:19px;
+    font-weight:700;
+    color: var(--text);
+    margin: 0 0 4px;
+  }
+  .card-note{ color:var(--text-muted); font-size:12.5px; margin:0 0 14px; line-height:1.7; }
+
+  .stat-block{ margin-bottom: 16px; }
+  .stat-block:last-child{ margin-bottom:0; }
+  .stat-head{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 7px; }
+  .stat-head .label{ font-size:14.5px; font-weight:500; }
+  .stat-head .frac{ font-size:11.5px; color:var(--text-muted); }
+  .stat-pct{ font-family:'Amiri', 'Georgia', serif; font-weight:700; font-size:17px; color:var(--accent-light); }
+  .stat-bar{ height:9px; border-radius:6px; background: rgba(128,128,128,0.15); overflow:hidden; }
+  .stat-fill{ height:100%; border-radius:6px; background: linear-gradient(90deg, var(--accent), var(--accent-light)); transition: width 0.4s ease; }
+
+  .prayer-row{ display:flex; align-items:center; justify-content:space-between; padding: 11px 8px; border-radius: 10px; margin-bottom: 4px; }
+  .prayer-row.active{ background: var(--active-bg); }
+  .prayer-row.missed{ background: var(--missed-bg); }
+  .prayer-row.done{ background: var(--done-bg); }
+
+  .prayer-info{ display:flex; flex-direction:column; gap:2px; }
+  .prayer-name{ font-size:16px; font-weight:500; }
+  .prayer-time{ font-size:12px; color:var(--text-muted); }
+  .prayer-status{ font-size:11px; }
+  .prayer-status.active{ color: var(--active); }
+  .prayer-status.missed{ color: var(--missed); }
+  .prayer-status.done{ color: var(--done); }
+  .prayer-status.upcoming{ color: var(--text-muted); }
+
+  .check-btn{
+    border:1px solid var(--divider); background: transparent; color: var(--text-muted);
+    border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 12.5px;
+    font-weight:700; cursor:pointer; transition: all 0.15s ease; white-space:nowrap;
+  }
+  .check-btn.done{ background: var(--done-bg); border-color: var(--done); color: var(--done); }
+  .check-btn.active{ border-color: var(--active); color: var(--active); }
+  .check-btn.missed{ border-color: var(--missed); color: var(--missed); }
+  .check-btn.upcoming{ opacity:0.4; cursor:not-allowed; }
+  .check-btn:active:not(.upcoming){ transform: scale(0.96); }
+
+  .missed-row{ display:flex; align-items:center; justify-content:space-between; padding: 10px 4px; }
+  .missed-left{ display:flex; align-items:center; gap:12px; }
+  .count{ font-family:'Amiri', 'Georgia', serif; font-size: 22px; font-weight:700; color: var(--accent-light); min-width: 22px; text-align:center; }
+  .count.zero{ color: var(--text-muted); opacity:0.6; }
+  .step-btn{
+    width:30px; height:30px; border-radius:8px; border:1px solid var(--divider);
+    background: rgba(128,128,128,0.06); color: var(--text); font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .step-btn:active{ transform: scale(0.94); }
+  .steps{ display:flex; gap:6px; }
+
+  .total-row{ display:flex; justify-content:space-between; align-items:center; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--divider); }
+  .total-label{ color:var(--text-muted); font-size:14px; }
+  .total-value{ font-family:'Amiri', 'Georgia', serif; font-size:24px; font-weight:700; color:var(--accent); }
+
+  .backlog-inputs{ display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+  .backlog-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .backlog-item input{
+    width: 64px; background: rgba(128,128,128,0.08); border: 1px solid var(--divider);
+    color: var(--text); border-radius:8px; padding:7px 8px; font-family: inherit; font-size:14px; text-align:center;
+  }
+  .backlog-actions{ display:flex; gap:10px; margin-top:4px; }
+  .primary-btn{
+    flex:1; background: linear-gradient(180deg, var(--accent-light), var(--accent));
+    color: #22190a; border:none; border-radius: 10px; padding: 10px 0;
+    font-weight:800; font-size:14px; cursor:pointer; font-family: inherit;
+  }
+  .ghost-btn{
+    flex:1; background:transparent; color: var(--text-muted); border: 1px solid var(--divider);
+    border-radius: 10px; padding: 10px 0; font-size:14px; cursor:pointer; font-family: inherit;
+  }
+
+  footer{ text-align:center; color: var(--text-muted); font-size: 12.5px; line-height: 2; margin-top: 30px; padding: 0 10px; }
+  footer .verse{ display:block; font-family:'Amiri', 'Georgia', serif; color: var(--accent-light); font-size: 15px; margin-bottom: 8px; }
+  footer .disclaimer{ display:block; margin-top:10px; opacity:0.75; font-size:11.5px; }
+
+  .toast{
+    position: fixed; bottom: 22px; left:50%; transform: translateX(-50%) translateY(20px);
+    background: var(--accent-light); color:#22190a; padding: 9px 18px; border-radius: 999px;
+    font-size:13px; font-weight:700; opacity:0; transition: all 0.25s ease; pointer-events:none;
+    max-width: 85%; text-align:center;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+  .toast.err{ background: var(--err); color:#fff; }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal-backdrop.show{ display:flex; }
+  .modal-card{ background: linear-gradient(180deg, var(--card), var(--card2)); border:1px solid var(--divider); border-radius:18px; padding:20px 18px; max-width:420px; width:100%; max-height:85vh; overflow-y:auto; }
+  .settings-section{ margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--divider); }
+  .settings-section:last-of-type{ border-bottom:none; margin-bottom:10px; padding-bottom:0; }
+  .settings-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .settings-label{ font-size:14.5px; font-weight:600; }
+  .settings-sub{ font-size:12px; color:var(--text-muted); margin-top:3px; line-height:1.6; }
+  .switch{ position:relative; width:44px; height:24px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch .slider{ position:absolute; inset:0; background: rgba(128,128,128,0.3); border-radius:999px; cursor:pointer; transition:0.2s; }
+  .switch .slider:before{ content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.2s; }
+  .switch input:checked + .slider{ background: var(--accent); }
+  .switch input:checked + .slider:before{ transform: translateX(20px); }
+  html[dir="rtl"] .switch .slider:before{ left:auto; right:3px; }
+  html[dir="rtl"] .switch input:checked + .slider:before{ transform: translateX(-20px); }
+  .radio-group{ display:flex; flex-direction:column; gap:9px; }
+  .radio-opt{ display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer; }
+  .radio-opt input{ accent-color: var(--accent); width:16px; height:16px; }
+  .number-row{ display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13.5px; }
+  .number-row input{ width:60px; background: rgba(128,128,128,0.08); border:1px solid var(--divider); color:var(--text); border-radius:8px; padding:6px 8px; text-align:center; font-family:inherit; }
+  .modal-close-btn{ width:100%; margin-top:4px; }
+
+  .dua-box{ text-align:center; margin: 18px 0 4px; padding: 16px 18px; border-top:1px solid var(--divider); border-bottom:1px solid var(--divider); }
+  .dua-text{ font-family:'Amiri', 'Georgia', serif; font-size:16px; color:var(--accent-light); line-height:2.1; margin:0 0 6px; }
+  .dua-citation{ font-size:11.5px; color:var(--text-muted); margin:0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="controls-row">
+    <button class="ctrl-btn" id="syncBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg>
+      <span id="syncBtnLabel"></span>
+    </button>
+    <button class="ctrl-btn" id="themeBtn">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
+      <span id="themeBtnLabel"></span>
+    </button>
+    <button class="ctrl-btn" id="langBtn"><span id="langBtnLabel"></span></button>
+    <button class="ctrl-btn" id="settingsBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    </button>
+    <button class="ctrl-btn" id="aboutBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    </button>
+  </div>
+
+  <header>
+    <svg class="moon" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 1 0 10.5 10.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+    <h1 id="appTitle"></h1>
+    <p class="sub" id="appSubtitle"></p>
+  </header>
+
+  <div class="date" id="todayLabel"></div>
+  <div class="loc-line" id="locLine"></div>
+
+  <div class="dua-box">
+    <p class="dua-text" id="duaText"></p>
+    <p class="dua-citation" id="duaCitation"></p>
+  </div>
+
+  <div class="divider">
+    <span class="line"></span>
+    <svg viewBox="0 0 40 40" fill="none"><path d="M20 2 L23 15 L36 12 L25 20 L36 28 L23 25 L20 38 L17 25 L4 28 L15 20 L4 12 L17 15 Z" stroke="currentColor" stroke-width="1"/></svg>
+    <span class="line"></span>
+  </div>
+
+  <div class="card">
+    <p class="card-title" id="statsTitle"></p>
+    <p class="card-note" id="statsNote"></p>
+    <div class="stat-block">
+      <div class="stat-head"><span class="label" id="weekLabel"></span><span class="stat-pct" id="weekPct">—</span></div>
+      <div class="stat-bar"><div class="stat-fill" id="weekBar" style="width:0%"></div></div>
+      <div class="stat-head" style="margin-top:4px;"><span class="frac" id="weekFrac"></span></div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-head"><span class="label" id="monthLabel"></span><span class="stat-pct" id="monthPct">—</span></div>
+      <div class="stat-bar"><div class="stat-fill" id="monthBar" style="width:0%"></div></div>
+      <div class="stat-head" style="margin-top:4px;"><span class="frac" id="monthFrac"></span></div>
+    </div>
+  </div>
+
+  <div id="backlogCard"></div>
+
+  <div class="card">
+    <p class="card-title" id="todayTitle"></p>
+    <p class="card-note" id="todayNote"></p>
+    <div id="todayList"></div>
+  </div>
+
+  <div class="card">
+    <p class="card-title" id="missedTitle"></p>
+    <p class="card-note" id="missedNote"></p>
+    <div id="missedList"></div>
+    <div class="total-row">
+      <span class="total-label" id="totalLabel"></span>
+      <span class="total-value" id="totalMissed">0</span>
+    </div>
+  </div>
+
+  <footer>
+    <span class="verse" id="footerVerse"></span>
+    <span id="footerText"></span>
+    <span class="disclaimer" id="footerDisclaimer"></span>
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal-card">
+    <p class="card-title" id="settingsTitle"></p>
+
+    <div class="settings-section">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label" id="vibrationLabel"></div>
+          <div class="settings-sub" id="vibrationSub"></div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="vibrationToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label" id="flashLabel"></div>
+          <div class="settings-sub" id="flashSub"></div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="flashToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label" id="alertsLabel"></div>
+          <div class="settings-sub" id="alertsSub"></div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="alertsToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="alertsOptions" style="display:none;">
+        <div class="number-row">
+          <span id="sharedLeadLabel"></span>
+          <input type="number" id="sharedLeadInput" min="1" step="5" value="20">
+          <span id="sharedMinUnit"></span>
+        </div>
+        <div class="radio-group" id="reminderStyleGroup" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label" id="athanSectionLabel" style="margin-bottom:8px;"></div>
+      <div class="radio-group" id="athanModeGroup"></div>
+      <div class="settings-sub" id="athanFileNote" style="margin-top:8px;"></div>
+    </div>
+
+    <button class="primary-btn modal-close-btn" id="closeSettingsBtn"></button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="aboutModal">
+  <div class="modal-card">
+    <p class="card-title" id="aboutTitle"></p>
+    <p class="card-note" id="aboutPurpose" style="line-height:1.9;"></p>
+    <div class="dua-box" style="margin:14px 0;">
+      <p class="dua-text" id="aboutHadith" style="font-size:15px;"></p>
+      <p class="dua-citation" id="aboutHadithCitation"></p>
+    </div>
+    <p class="card-note" id="aboutAdvice" style="line-height:1.9;"></p>
+    <button class="primary-btn modal-close-btn" id="closeAboutBtn"></button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'prayer-tracker-state-v4';
+const FALLBACK_LOCATION = { lat: 31.55, lng: 31.10, source: 'default' }; // Baltim, Egypt
+const HISTORY_KEEP_DAYS = 40;
+
+const ICON_MOON = 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z';
+const ICON_SUN = 'M12 3v2M12 19v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z';
+
+const STRINGS = {
+  ar: {
+    appTitle: 'سجل الفوائت',
+    appSubtitle: 'الصلاة لا تسقط، وباب القضاء مفتوح. أول ما يخلص وقت الصلاة من غير ما تتسجل، بتتحسب في رصيدك أوتوماتيك.',
+    locGps: 'المواعيد حسب موقعك الحالي',
+    locDefault: 'المواعيد لبلطيم، مصر (افتراضي)',
+    locNamed: (name) => `المواعيد لـ${name}`,
+    syncLabel: 'مزامنة',
+    themeLabelDark: 'داكن',
+    themeLabelLight: 'عادي',
+    langLabel: 'English',
+    statsTitle: 'مؤشر الالتزام',
+    statsNote: 'نسبة الصلوات اللي صليتها في وقتها، مقارنة باللي كان المفروض تتصلي.',
+    weekLabel: 'آخر أسبوع',
+    monthLabel: 'آخر شهر',
+    statsFrac: (d,t) => `صليت ${d} من ${t}`,
+    backlogTitle: 'عندك فوائت من قبل التطبيق؟',
+    backlogNote: 'لو تقريبًا عارف عدد الصلوات اللي عليك من زمان، دخّلها هنا عشان تتضاف لرصيدك. لو مش عارف بالظبط، سيبها صفر وابدأ من دلوقتي.',
+    skip: 'تخطي',
+    save: 'حفظ',
+    todayTitle: 'صلوات اليوم',
+    todayNote: 'المواعيد محسوبة تلقائيًا حسب موقعك. لما ميعاد صلاة يخلص من غير تسجيل، بتتضاف للفوائت لوحدها.',
+    missedTitle: 'رصيد الفوائت',
+    missedNote: 'اضغط "قضيت" كل ما تصلي فرض قضاء عن يوم فات. اضغط + لو فاتك تسجيل يوم قديم.',
+    totalLabel: 'إجمالي الفوائت',
+    footerVerse: '"إِنَّ الْحَسَنَاتِ يُذْهِبْنَ السَّيِّئَاتِ"',
+    footerText: 'اتوب وارجع، وكل صلاة تقضيها خطوة أقرب لله. البيانات محفوظة على جهازك بس.',
+    footerDisclaimer: 'المواعيد تقريبية بحساب فلكي (زاوية الفجر والعشاء ١٩.٥°/١٧.٥°، عصر شافعي)، ممكن تختلف دقيقة أو اتنين عن أذان بلدك — راجعها مع الأذان المحلي للتأكيد.',
+    statusActive: 'وقتها دلوقتي',
+    statusUpcoming: 'لسه ما جاش وقتها',
+    statusMissed: 'فات وقتها',
+    statusDone: 'تمت',
+    btnDone: '✓ صليت',
+    btnMissed: 'فاتت — قضاء',
+    btnUpcoming: 'لسه',
+    toastAccepted: 'تقبل الله',
+    toastQadaAccepted: 'تقبل الله القضاء',
+    toastSaved: 'تم الحفظ',
+    toastSyncDone: 'تمت المزامنة',
+    toastSyncFailed: 'اتزامن الوقت، بس تعذر الوصول للموقع',
+    toastStorageFail: 'تعذر حفظ البيانات على الجهاز',
+    settingsTitle: 'الإعدادات',
+    minutesUnit: 'دقيقة',
+    athanSectionLabel: 'رفع الأذان مع كل صلاة',
+    athanFileNote: 'خيار "أذان كامل" يحتاج ملف صوت تضيفه بنفسك للمشروع؛ من غيره بيرجع تلقائي لإشعار عادي.',
+    done: 'تم',
+    style_plain: 'إشعار عادي',
+    style_gentle: 'صيغة ألطف',
+    athan_full: 'أذان كامل بالصوت',
+    athan_notification: 'إشعار فقط',
+    athan_off: 'بدون تنبيه',
+    alertsLabel: 'تنبيه اقتراب الصلاة',
+    alertsSub: 'تنبيه واحد بس قبل كل صلاة: يقولك إنها قربت، أو لو اللي قبلها لسه ما اتسجلتش، يقولك تصليها قبل ما تفوت',
+    sharedLeadLabel: 'نبهني قبل الميعاد بـ',
+    vibrationLabel: 'الاهتزاز',
+    vibrationSub: 'اهتزاز ثانية مع كل إشعار، واهتزاز مستمر طول ما الأذان شغال',
+    flashLabel: 'وميض الفلاش مع الأذان',
+    flashSub: 'الفلاش يولّع ويطفي طول ما الأذان الكامل شغال، لحد ما يخلص أو تضغط أي زرار صوت',
+    aboutTitle: 'عن التطبيق',
+    aboutPurpose: 'التطبيق ده معمول لوجه الله عز وجل، مش لمكسب أو حق نشر أو شهرة. أي حد يقدر ياخده وينسخه ويطوره — النية إن يبقى صدقة جارية.',
+    aboutHadith: 'أَوَّلُ مَا يُحَاسَبُ بِهِ الْعَبْدُ يَوْمَ الْقِيَامَةِ مِنْ عَمَلِهِ صَلَاتُهُ، فَإِنْ صَلَحَتْ فَقَدْ أَفْلَحَ وَأَنْجَحَ، وَإِنْ فَسَدَتْ فَقَدْ خَابَ وَخَسِرَ',
+    aboutHadithCitation: '— رواه الترمذي',
+    aboutAdvice: 'الصلاة مش تفضّل بنعمله لربنا سبحانه، هي واجب علينا، وإحنا المحتاجين ليها مش هو. حافظ عليها، فهي اللي هتفضل معاك لما كل حاجة تنتهي.',
+    duaText: 'رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِنْ ذُرِّيَّتِي رَبَّنَا وَتَقَبَّلْ دُعَاءِ',
+    duaCitation: '— سورة إبراهيم، الآية ٤٠',
+    prayers: {fajr:'الفجر', dhuhr:'الظهر', asr:'العصر', maghrib:'المغرب', isha:'العشاء'},
+    locale: 'ar-EG'
+  },
+  en: {
+    appTitle: "Qada' Tracker",
+    appSubtitle: "Prayer is never truly lost while the door to making it up is open. The moment a prayer's time ends unmarked, it's added to your balance automatically.",
+    locGps: 'Times based on your current location',
+    locDefault: 'Times for Baltim, Egypt (default)',
+    locNamed: (name) => `Times for ${name}`,
+    syncLabel: 'Sync',
+    themeLabelDark: 'Dark',
+    themeLabelLight: 'Light',
+    langLabel: 'عربي',
+    statsTitle: 'Commitment',
+    statsNote: 'Share of prayers you prayed on time, against what was due.',
+    weekLabel: 'Last 7 days',
+    monthLabel: 'Last 30 days',
+    statsFrac: (d,t) => `${d} of ${t} prayed`,
+    backlogTitle: 'Do you owe prayers from before this app?',
+    backlogNote: "If you roughly know how many prayers you owe from before, add them here so they count toward your balance. Not sure? Leave it at zero and start fresh.",
+    skip: 'Skip',
+    save: 'Save',
+    todayTitle: "Today's prayers",
+    todayNote: "Times are calculated automatically from your location. Once a prayer's window closes unmarked, it's added to your missed count on its own.",
+    missedTitle: 'Missed prayer balance',
+    missedNote: 'Tap "Prayed" each time you make up a missed prayer. Tap + if you forgot to log an old day.',
+    totalLabel: 'Total missed',
+    footerVerse: '"Good deeds erase bad ones"',
+    footerText: 'Repent and return - every prayer you make up is a step closer to God. Your data stays on this device only.',
+    footerDisclaimer: 'Times are an astronomical approximation (Fajr/Isha angles 19.5°/17.5°, Shafi Asr) and may differ by a minute or two from your local adhan - check against it to confirm.',
+    statusActive: 'due now',
+    statusUpcoming: "not started yet",
+    statusMissed: 'time passed',
+    statusDone: 'done',
+    btnDone: '✓ Prayed',
+    btnMissed: 'Missed — make up',
+    btnUpcoming: 'Not yet',
+    toastAccepted: 'May it be accepted',
+    toastQadaAccepted: 'May your make-up prayer be accepted',
+    toastSaved: 'Saved',
+    toastSyncDone: 'Synced',
+    toastSyncFailed: 'Time synced, but location was unavailable',
+    toastStorageFail: 'Could not save data on this device',
+    settingsTitle: 'Settings',
+    minutesUnit: 'minutes before',
+    athanSectionLabel: 'Play athan at each prayer time',
+    athanFileNote: '"Full athan" needs an audio file you add to the project yourself; without it, this falls back to a plain notification automatically.',
+    done: 'Done',
+    style_plain: 'Plain notification',
+    style_gentle: 'Gentler wording',
+    athan_full: 'Full audio athan',
+    athan_notification: 'Notification only',
+    athan_off: 'No alert',
+    alertsLabel: 'Approaching-prayer alert',
+    alertsSub: "One alert only, before each prayer: says it's approaching, or - if the one before it is still unlogged - tells you to pray it before you miss it",
+    sharedLeadLabel: 'Remind me',
+    vibrationLabel: 'Vibration',
+    vibrationSub: 'A one-second buzz with every notification, and continuous vibration for as long as the athan plays',
+    flashLabel: 'Flash strobe with athan',
+    flashSub: 'The flashlight blinks for as long as the full athan plays, until it ends or you press a volume button',
+    aboutTitle: 'About this app',
+    aboutPurpose: "This app was made sincerely for the sake of Allah, not for profit, credit, or fame. Anyone is welcome to take it, copy it, and build on it - the intention is for it to be an ongoing act of charity.",
+    aboutHadith: '"The first matter a servant will be held to account for on the Day of Judgment, from his deeds, is his prayer. If it is sound, he has succeeded and prospered; if it is corrupt, he has failed and lost."',
+    aboutHadithCitation: '— Narrated by al-Tirmidhi',
+    aboutAdvice: "Prayer isn't a favor we do for God - it's an obligation on us, and we're the ones who need it, not Him. Hold on to it; it's what stays with you when everything else ends.",
+    duaText: '"My Lord, make me an establisher of prayer, and [many] from my descendants. Our Lord, and accept my supplication."',
+    duaCitation: '— Surah Ibrahim, 14:40',
+    prayers: {fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha'},
+    locale: 'en-US'
+  }
+};
+const PRAYER_ORDER = ['fajr','dhuhr','asr','maghrib','isha'];
+
+let state = null;
+let LOCATION = null;
+
+function t(key){ return STRINGS[state.settings.lang][key]; }
+function prayerName(id){ return STRINGS[state.settings.lang].prayers[id]; }
+
+// ---------- date helpers ----------
+function dateStr(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function dateFromStr(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+function addDays(d, n){ const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function diffDaysBetween(aStr, bStr){ return Math.round((dateFromStr(bStr) - dateFromStr(aStr)) / 86400000); }
+
+// ---------- sun / prayer time calculation ----------
+function toRad(d){ return d*Math.PI/180; }
+function toDeg(r){ return r*180/Math.PI; }
+function dayOfYear(date){ const start = new Date(date.getFullYear(),0,0); return Math.floor((date-start)/86400000); }
+function calcTimesForDate(date, lat, lng, tzOffsetHours){
+  const N = dayOfYear(date);
+  const gamma = 2*Math.PI/365 * (N - 1 + 12/24);
+  const eqtime = 229.18*(0.000075 + 0.001868*Math.cos(gamma) - 0.032077*Math.sin(gamma) - 0.014615*Math.cos(2*gamma) - 0.040849*Math.sin(2*gamma));
+  const decl = 0.006918 - 0.399912*Math.cos(gamma) + 0.070257*Math.sin(gamma) - 0.006758*Math.cos(2*gamma) + 0.000907*Math.sin(2*gamma) - 0.002697*Math.cos(3*gamma) + 0.00148*Math.sin(3*gamma);
+  const solarNoonMin = 720 - 4*lng - eqtime + tzOffsetHours*60;
+  function hourAngleMinutes(zenithDeg){
+    const zen = toRad(zenithDeg);
+    const latR = toRad(lat);
+    const cosHA = (Math.cos(zen) - Math.sin(latR)*Math.sin(decl)) / (Math.cos(latR)*Math.cos(decl));
+    if(cosHA > 1 || cosHA < -1) return null;
+    return toDeg(Math.acos(cosHA))*4;
+  }
+  function toDate(mins){
+    if(mins==null) return null;
+    const d = new Date(date); d.setHours(0,0,0,0);
+    d.setMinutes(Math.round(mins));
+    return d;
+  }
+  const sunsetMin = solarNoonMin + hourAngleMinutes(90.833);
+  const fajrMin = solarNoonMin - hourAngleMinutes(90+19.5);
+  const ishaMin = solarNoonMin + hourAngleMinutes(90+17.5);
+  const declDeg = toDeg(decl);
+  const asrAngle = toDeg(Math.atan(1/(1 + Math.tan(toRad(Math.abs(lat-declDeg))))));
+  const asrMin = solarNoonMin + hourAngleMinutes(90-asrAngle);
+  return {
+    fajr: toDate(fajrMin),
+    dhuhr: toDate(solarNoonMin + 1),
+    asr: toDate(asrMin),
+    maghrib: toDate(sunsetMin),
+    isha: toDate(ishaMin)
+  };
+}
+function tzOffsetHours(){ return -new Date().getTimezoneOffset()/60; }
+
+// ---------- official times (opportunistic online source, local calc is always the fallback) ----------
+let officialTimesCache = null; // { date, lat, lng, times: {fajr:Date,...} }
+
+function getTimesForDate(date, lat, lng, tz){
+  const ds = dateStr(date);
+  if(officialTimesCache && officialTimesCache.date === ds &&
+     Math.abs(officialTimesCache.lat - lat) < 0.01 && Math.abs(officialTimesCache.lng - lng) < 0.01){
+    return officialTimesCache.times;
+  }
+  return calcTimesForDate(date, lat, lng, tz);
+}
+
+async function refreshOfficialTimes(date, lat, lng){
+  const ds = dateStr(date);
+  if(officialTimesCache && officialTimesCache.date === ds &&
+     Math.abs(officialTimesCache.lat - lat) < 0.01 && Math.abs(officialTimesCache.lng - lng) < 0.01){
+    return true; // already have it for this date/location
+  }
+  try{
+    const dd = String(date.getDate()).padStart(2,'0');
+    const mm = String(date.getMonth()+1).padStart(2,'0');
+    const yyyy = date.getFullYear();
+    // method=5 = Egyptian General Authority of Survey (same angles this app's
+    // own fallback calculation uses), so results stay consistent either way.
+    const url = `https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lng}&method=5`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(url, {signal: controller.signal});
+    clearTimeout(timeoutId);
+    if(!res.ok) throw new Error('bad status ' + res.status);
+    const json = await res.json();
+    const tm = json.data.timings;
+    function parseHHMM(s){
+      const clean = String(s).split(' ')[0]; // strip a possible "(EET)" timezone suffix
+      const [h,m] = clean.split(':').map(Number);
+      const d = new Date(date); d.setHours(h, m, 0, 0);
+      return d;
+    }
+    officialTimesCache = {
+      date: ds, lat, lng,
+      times: {
+        fajr: parseHHMM(tm.Fajr), dhuhr: parseHHMM(tm.Dhuhr), asr: parseHHMM(tm.Asr),
+        maghrib: parseHHMM(tm.Maghrib), isha: parseHHMM(tm.Isha)
+      }
+    };
+    return true;
+  }catch(e){
+    console.error('official prayer-times fetch failed, using local calculation instead', e);
+    return false;
+  }
+}
+
+async function reverseGeocode(lat, lng){
+  try{
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=${state.settings.lang}`;
+    const res = await fetch(url, {signal: controller.signal, headers: {'Accept': 'application/json'}});
+    clearTimeout(timeoutId);
+    if(!res.ok) throw new Error('bad status ' + res.status);
+    const json = await res.json();
+    const addr = json.address || {};
+    return addr.city || addr.town || addr.village || addr.county || addr.state || null;
+  }catch(e){
+    console.error('reverse geocoding failed', e);
+    return null;
+  }
+}
+
+function getCycleDateStr(now, loc){
+  const todayCalc = calcTimesForDate(now, loc.lat, loc.lng, tzOffsetHours());
+  if(todayCalc.fajr && now < todayCalc.fajr){ return dateStr(addDays(now, -1)); }
+  return dateStr(now);
+}
+
+// ---------- storage ----------
+function freshToday(){ const o = {}; PRAYER_ORDER.forEach(id => o[id] = {done:false, processed:false}); return o; }
+function emptyMissed(){ const o = {}; PRAYER_ORDER.forEach(id => o[id] = 0); return o; }
+function emptyMissedDates(){ const o = {}; PRAYER_ORDER.forEach(id => o[id] = []); return o; }
+function defaultState(){
+  return {
+    currentCycleDate: null, today: freshToday(), missed: emptyMissed(), missedDates: emptyMissedDates(),
+    backlogPrompted: false, location: null, locationName: null, history: {},
+    settings: { theme: 'dark', lang: 'ar', athanMode: 'notification', alertsEnabled: false, alertLeadMinutes: 20, reminderStyle: 'plain', vibrationEnabled: true, flashEnabled: false }
+  };
+}
+function migrateIfNeeded(s){
+  if(!s) return s;
+  const looksOld = s.today && PRAYER_ORDER.some(id => typeof s.today[id] === 'boolean');
+  if(looksOld){
+    return { currentCycleDate: null, today: freshToday(), missed: s.missed || emptyMissed(), missedDates: emptyMissedDates(), backlogPrompted: !!s.backlogPrompted, location: null, locationName: null, history: {}, settings: defaultState().settings };
+  }
+  if(s.currentCycleDate === undefined) s.currentCycleDate = null;
+  if(s.location === undefined) s.location = null;
+  if(s.locationName === undefined) s.locationName = null;
+  if(s.history === undefined) s.history = {};
+  if(s.missedDates === undefined) s.missedDates = emptyMissedDates();
+  PRAYER_ORDER.forEach(id => { if(!Array.isArray(s.missedDates[id])) s.missedDates[id] = []; });
+  if(s.settings === undefined) s.settings = {};
+  if(s.settings.theme === undefined) s.settings.theme = 'dark';
+  if(s.settings.lang === undefined) s.settings.lang = 'ar';
+  if(s.settings.athanMode === undefined) s.settings.athanMode = 'notification';
+  if(s.settings.reminderStyle === undefined) s.settings.reminderStyle = 'plain';
+  if(s.settings.vibrationEnabled === undefined) s.settings.vibrationEnabled = true;
+  if(s.settings.flashEnabled === undefined) s.settings.flashEnabled = false;
+  // Merge from the old two-toggle/two-lead-time design into one unified alert,
+  // carrying over whichever lead time was already in use.
+  if(s.settings.alertsEnabled === undefined){
+    s.settings.alertsEnabled = !!(s.settings.reminderEnabled || s.settings.upcomingEnabled);
+    s.settings.alertLeadMinutes = s.settings.reminderLeadMinutes || s.settings.upcomingLeadMinutes || 20;
+    delete s.settings.reminderEnabled;
+    delete s.settings.reminderLeadMinutes;
+    delete s.settings.upcomingEnabled;
+    delete s.settings.upcomingLeadMinutes;
+    delete s.settings.separateLeadTimes;
+  }
+  return s;
+}
+
+// Every place the missed-count changes goes through these two helpers, which
+// also maintain a dated FIFO ledger (missedDates) of which specific day each
+// point of debt came from. This is what lets paying qada off (decrementMissed)
+// retroactively fix that day's entry in the week/month commitment stats,
+// instead of that day staying permanently marked "missed" even after you've
+// actually made the prayer up.
+function incrementMissed(id, date){
+  state.missed[id] += 1;
+  if(!Array.isArray(state.missedDates[id])) state.missedDates[id] = [];
+  state.missedDates[id].push(date || null);
+}
+function decrementMissed(id){
+  if(state.missed[id] <= 0) return false;
+  state.missed[id] -= 1;
+  const dates = state.missedDates[id];
+  const poppedDate = (dates && dates.length > 0) ? dates.shift() : null;
+  if(poppedDate && state.history[poppedDate]){
+    state.history[poppedDate].done += 1;
+    state.history[poppedDate].missed = Math.max(0, state.history[poppedDate].missed - 1);
+  }
+  return true;
+}
+async function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return migrateIfNeeded(JSON.parse(raw));
+  }catch(e){ console.error('localStorage read failed', e); }
+  return null;
+}
+let storageWarned = false;
+async function persist(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){
+    console.error('localStorage write failed', e);
+    if(!storageWarned){ storageWarned = true; showToast(t('toastStorageFail'), true); }
+  }
+}
+
+// ---------- sound (custom file if present, else synthesized - never needs a file to work) ----------
+let audioCtx = null;
+let customChime = null;
+let customChimeChecked = false;
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ return null; }
+  }
+  // WebViews commonly create a fresh AudioContext in a "suspended" state
+  // until explicitly resumed - without this, oscillators schedule silently
+  // and nothing is actually heard. Resuming is safe to call every time.
+  if(audioCtx.state === 'suspended'){
+    try{ audioCtx.resume(); }catch(e){ /* ignore - playback just won't be audible this once */ }
+  }
+  return audioCtx;
+}
+function tryLoadCustomChime(){
+  if(customChimeChecked) return;
+  customChimeChecked = true;
+  try{
+    const audio = new Audio('sounds/accepted.mp3');
+    audio.addEventListener('canplaythrough', () => { customChime = audio; }, {once:true});
+    audio.addEventListener('error', () => { customChime = null; }, {once:true});
+    audio.load();
+  }catch(e){ customChime = null; }
+}
+function vibrateShort(){
+  try{ if(navigator.vibrate) navigator.vibrate(40); }catch(e){ /* not supported on this device - harmless */ }
+}
+function playChime(){
+  if(customChime){
+    try{ customChime.currentTime = 0; customChime.play(); return; }
+    catch(e){ /* fall through to synthesized chime below */ }
+  }
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const now = ctx.currentTime;
+  // A soft two-note rising chime (like a gentle "ding-ding" of acceptance).
+  [ {freq: 880, start: 0, dur: 0.22}, {freq: 1174.66, start: 0.14, dur: 0.30} ].forEach(note => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = note.freq;
+    gain.gain.setValueAtTime(0, now + note.start);
+    gain.gain.linearRampToValueAtTime(0.18, now + note.start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + note.start + note.dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + note.start);
+    osc.stop(now + note.start + note.dur + 0.05);
+  });
+}
+function playTick(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const now = ctx.currentTime;
+  // A very short, soft click - a general "something was tapped" sound,
+  // distinct from and much briefer than the acceptance chime above.
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = 1800;
+  gain.gain.setValueAtTime(0.05, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.04);
+}
+
+// ---------- native bridge (Android only - no-op in a plain browser) ----------
+function pushSettingsToNative(){
+  if(window.AndroidBridge && window.AndroidBridge.saveSettings){
+    window.AndroidBridge.saveSettings(JSON.stringify({
+      athanMode: state.settings.athanMode,
+      alertsEnabled: state.settings.alertsEnabled,
+      alertLeadMinutes: state.settings.alertLeadMinutes,
+      reminderStyle: state.settings.reminderStyle,
+      vibrationEnabled: state.settings.vibrationEnabled,
+      flashEnabled: state.settings.flashEnabled,
+      lang: state.settings.lang,
+      theme: state.settings.theme
+    }));
+  }
+}
+function pushScheduleToNative(){
+  if(!window.AndroidBridge || !window.AndroidBridge.schedulePrayers) return;
+  if(!state.currentCycleDate || !LOCATION) return;
+  const cycleDateObj = dateFromStr(state.currentCycleDate);
+  const times = getTimesForDate(cycleDateObj, LOCATION.lat, LOCATION.lng, tzOffsetHours());
+  const nextFajr = getTimesForDate(addDays(cycleDateObj,1), LOCATION.lat, LOCATION.lng, tzOffsetHours()).fajr;
+  const arr = PRAYER_ORDER.map((id,i) => {
+    const start = times[id];
+    const end = i < PRAYER_ORDER.length-1 ? times[PRAYER_ORDER[i+1]] : nextFajr;
+    return { id, start: start ? start.getTime() : 0, end: end ? end.getTime() : 0 };
+  });
+  window.AndroidBridge.schedulePrayers(state.currentCycleDate, JSON.stringify(arr));
+}
+function pushDoneToNative(id, done){
+  if(window.AndroidBridge && window.AndroidBridge.setPrayerDone && state.currentCycleDate){
+    window.AndroidBridge.setPrayerDone(state.currentCycleDate, id, done);
+  }
+}
+// Pulls in anything marked done/undone via a home-screen widget while this
+// app wasn't open, applying it through the same missed-count adjustments
+// toggleDone() uses, so nothing gets double-counted either way.
+function reconcileFromNative(){
+  if(!window.AndroidBridge || !window.AndroidBridge.getDoneStates || !state.currentCycleDate) return false;
+  let json;
+  try{ json = window.AndroidBridge.getDoneStates(state.currentCycleDate); }catch(e){ return false; }
+  if(!json) return false;
+  let nativeDone;
+  try{ nativeDone = JSON.parse(json); }catch(e){ return false; }
+  let changed = false;
+  PRAYER_ORDER.forEach(id => {
+    const rec = state.today[id];
+    const nd = !!nativeDone[id];
+    if(nd !== rec.done){
+      if(nd){
+        if(rec.processed) decrementMissed(id);
+        rec.done = true; rec.processed = true;
+      } else {
+        rec.done = false;
+        rec.processed = false; // tick()'s processElapsedWindows re-evaluates this correctly right after
+      }
+      changed = true;
+    }
+  });
+  if(changed) persist();
+  return changed;
+}
+
+// ---------- location ----------
+async function resolveLocation(){
+  if(state.location){ return state.location; }
+  const loc = await new Promise((resolve) => {
+    if(!navigator.geolocation){ resolve({...FALLBACK_LOCATION}); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({lat: pos.coords.latitude, lng: pos.coords.longitude, source:'gps'}),
+      () => resolve({...FALLBACK_LOCATION}),
+      {timeout:6000}
+    );
+  });
+  state.location = loc;
+  await persist();
+  return loc;
+}
+function syncNow(){
+  if(!navigator.geolocation){ tick(); showToast(t('toastSyncDone')); return; }
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      state.location = {lat: pos.coords.latitude, lng: pos.coords.longitude, source:'gps'};
+      state.locationName = null;
+      await persist();
+      LOCATION = state.location;
+      tick();
+      pushScheduleToNative();
+      showToast(t('toastSyncDone'));
+      refreshLocationName();
+      refreshOfficialTimes(new Date(), LOCATION.lat, LOCATION.lng).then(got => {
+        if(got){ tick(); pushScheduleToNative(); }
+      });
+    },
+    () => { tick(); showToast(t('toastSyncFailed'), true); },
+    {timeout:6000}
+  );
+}
+async function refreshLocationName(){
+  const name = await reverseGeocode(LOCATION.lat, LOCATION.lng);
+  if(name){ state.locationName = name; await persist(); renderDate(); }
+}
+
+// ---------- history / stats ----------
+function trimHistory(){
+  const refDate = state.currentCycleDate || dateStr(new Date());
+  Object.keys(state.history).forEach(ds => {
+    if(diffDaysBetween(ds, refDate) > HISTORY_KEEP_DAYS) delete state.history[ds];
+  });
+  PRAYER_ORDER.forEach(id => {
+    state.missedDates[id] = state.missedDates[id].filter(ds => {
+      if(!ds) return true; // undated (manual/backlog) entries are kept indefinitely
+      return diffDaysBetween(ds, refDate) <= HISTORY_KEEP_DAYS;
+    });
+  });
+}
+function computeStats(nDays){
+  const refDate = state.currentCycleDate || dateStr(new Date());
+  let done = 0, total = 0;
+  Object.keys(state.history).forEach(ds => {
+    const diff = diffDaysBetween(ds, refDate);
+    if(diff >= 0 && diff < nDays){ done += state.history[ds].done; total += state.history[ds].done + state.history[ds].missed; }
+  });
+  PRAYER_ORDER.forEach(id => {
+    const rec = state.today[id];
+    if(rec.done){ done++; total++; } else if(rec.processed){ total++; }
+  });
+  return { done, total, pct: total > 0 ? Math.round(done/total*100) : null };
+}
+
+// ---------- core cycle logic ----------
+function finalizePreviousCycle(oldCycleDate, newCycleDate){
+  let doneCount = 0, missedCount = 0;
+  PRAYER_ORDER.forEach(id => {
+    const rec = state.today[id];
+    if(rec.done){ doneCount++; } else { if(!rec.processed) incrementMissed(id, oldCycleDate); missedCount++; }
+  });
+  state.history[oldCycleDate] = { done: doneCount, missed: missedCount };
+  const gap = diffDaysBetween(oldCycleDate, newCycleDate);
+  const extra = gap - 1;
+  if(extra > 0){
+    for(let i = 1; i <= extra; i++){
+      const gapDate = dateStr(addDays(dateFromStr(oldCycleDate), i));
+      PRAYER_ORDER.forEach(id => incrementMissed(id, gapDate));
+      state.history[gapDate] = { done: 0, missed: 5 };
+    }
+  }
+  trimHistory();
+}
+
+function getBounds(now){
+  const cycleDate = getCycleDateStr(now, LOCATION);
+  let changed = false;
+  if(state.currentCycleDate !== cycleDate){
+    if(state.currentCycleDate !== null){ finalizePreviousCycle(state.currentCycleDate, cycleDate); }
+    state.today = freshToday();
+    state.currentCycleDate = cycleDate;
+    changed = true;
+  }
+  const cycleDateObj = dateFromStr(cycleDate);
+  const times = getTimesForDate(cycleDateObj, LOCATION.lat, LOCATION.lng, tzOffsetHours());
+  const nextFajr = getTimesForDate(addDays(cycleDateObj,1), LOCATION.lat, LOCATION.lng, tzOffsetHours()).fajr;
+  const bounds = PRAYER_ORDER.map((id,i) => ({
+    id, start: times[id], end: i < PRAYER_ORDER.length-1 ? times[PRAYER_ORDER[i+1]] : nextFajr
+  }));
+  return { bounds, changed };
+}
+
+function processElapsedWindows(bounds, now){
+  let changed = false;
+  bounds.forEach(b => {
+    const rec = state.today[b.id];
+    if(b.end && now >= b.end && !rec.done && !rec.processed){
+      incrementMissed(b.id, state.currentCycleDate); rec.processed = true; changed = true;
+    }
+  });
+  return changed;
+}
+function statusOf(b, now){
+  const rec = state.today[b.id];
+  if(rec.done) return 'done';
+  if(b.start && now < b.start) return 'upcoming';
+  if(rec.processed) return 'missed';
+  return 'active';
+}
+async function toggleDone(id, bounds){
+  const rec = state.today[id];
+  const b = bounds.find(x => x.id === id);
+  const now = new Date();
+  if(rec.done){
+    rec.done = false;
+    if(b.end && now >= b.end){ incrementMissed(id, state.currentCycleDate); rec.processed = true; } else { rec.processed = false; }
+  } else {
+    if(rec.processed) decrementMissed(id);
+    rec.done = true; rec.processed = true;
+  }
+  await persist();
+  pushDoneToNative(id, rec.done);
+  tick();
+  if(rec.done){ showToast(t('toastAccepted')); playChime(); vibrateShort(); }
+}
+
+// ---------- theme / language ----------
+function applyThemeAndLang(){
+  document.body.classList.toggle('light-theme', state.settings.theme === 'light');
+  document.documentElement.setAttribute('dir', state.settings.lang === 'ar' ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', state.settings.lang);
+  const themeIcon = document.getElementById('themeIcon');
+  themeIcon.innerHTML = '<path d="' + (state.settings.theme === 'dark' ? ICON_MOON : ICON_SUN) + '"/>';
+  document.getElementById('syncBtnLabel').textContent = t('syncLabel');
+  document.getElementById('themeBtnLabel').textContent = state.settings.theme === 'dark' ? t('themeLabelDark') : t('themeLabelLight');
+  document.getElementById('langBtnLabel').textContent = t('langLabel');
+  document.getElementById('appTitle').textContent = t('appTitle');
+  document.getElementById('appSubtitle').textContent = t('appSubtitle');
+  document.getElementById('statsTitle').textContent = t('statsTitle');
+  document.getElementById('statsNote').textContent = t('statsNote');
+  document.getElementById('weekLabel').textContent = t('weekLabel');
+  document.getElementById('monthLabel').textContent = t('monthLabel');
+  document.getElementById('todayTitle').textContent = t('todayTitle');
+  document.getElementById('todayNote').textContent = t('todayNote');
+  document.getElementById('missedTitle').textContent = t('missedTitle');
+  document.getElementById('missedNote').textContent = t('missedNote');
+  document.getElementById('totalLabel').textContent = t('totalLabel');
+  document.getElementById('footerVerse').textContent = t('footerVerse');
+  document.getElementById('footerText').textContent = ' ' + t('footerText');
+  document.getElementById('footerDisclaimer').textContent = t('footerDisclaimer');
+  document.getElementById('duaText').textContent = t('duaText');
+  document.getElementById('duaCitation').textContent = t('duaCitation');
+}
+async function toggleTheme(){
+  state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+  await persist();
+  applyThemeAndLang();
+  pushSettingsToNative();
+}
+async function toggleLang(){
+  state.settings.lang = state.settings.lang === 'ar' ? 'en' : 'ar';
+  await persist();
+  applyThemeAndLang();
+  pushSettingsToNative();
+  renderBacklogCard();
+  tick();
+  if(document.getElementById('settingsModal').classList.contains('show')) renderSettingsModal();
+}
+
+// ---------- settings modal ----------
+function openSettings(){ renderSettingsModal(); document.getElementById('settingsModal').classList.add('show'); }
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+
+async function saveSettingsAndSync(){
+  await persist();
+  pushSettingsToNative();
+  pushScheduleToNative();
+}
+
+function renderSettingsModal(){
+  document.getElementById('settingsTitle').textContent = t('settingsTitle');
+  document.getElementById('athanSectionLabel').textContent = t('athanSectionLabel');
+  document.getElementById('athanFileNote').textContent = t('athanFileNote');
+  document.getElementById('closeSettingsBtn').textContent = t('done');
+
+  document.getElementById('vibrationLabel').textContent = t('vibrationLabel');
+  document.getElementById('vibrationSub').textContent = t('vibrationSub');
+  document.getElementById('flashLabel').textContent = t('flashLabel');
+  document.getElementById('flashSub').textContent = t('flashSub');
+  document.getElementById('alertsLabel').textContent = t('alertsLabel');
+  document.getElementById('alertsSub').textContent = t('alertsSub');
+  document.getElementById('sharedLeadLabel').textContent = t('sharedLeadLabel');
+  document.getElementById('sharedMinUnit').textContent = t('minutesUnit');
+
+  const vibrationToggle = document.getElementById('vibrationToggle');
+  vibrationToggle.checked = state.settings.vibrationEnabled;
+  vibrationToggle.onchange = async (e) => { state.settings.vibrationEnabled = e.target.checked; await saveSettingsAndSync(); };
+
+  const flashToggle = document.getElementById('flashToggle');
+  flashToggle.checked = state.settings.flashEnabled;
+  flashToggle.onchange = async (e) => { state.settings.flashEnabled = e.target.checked; await saveSettingsAndSync(); };
+
+  const alertsToggle = document.getElementById('alertsToggle');
+  alertsToggle.checked = state.settings.alertsEnabled;
+  document.getElementById('alertsOptions').style.display = state.settings.alertsEnabled ? 'block' : 'none';
+  document.getElementById('sharedLeadInput').value = state.settings.alertLeadMinutes;
+
+  const styleGroup = document.getElementById('reminderStyleGroup');
+  styleGroup.innerHTML = ['plain','gentle'].map(v => `
+    <label class="radio-opt"><input type="radio" name="reminderStyle" value="${v}" ${state.settings.reminderStyle===v?'checked':''}> ${t('style_'+v)}</label>
+  `).join('');
+
+  const athanGroup = document.getElementById('athanModeGroup');
+  athanGroup.innerHTML = ['full','notification','off'].map(v => `
+    <label class="radio-opt"><input type="radio" name="athanMode" value="${v}" ${state.settings.athanMode===v?'checked':''}> ${t('athan_'+v)}</label>
+  `).join('');
+
+  alertsToggle.onchange = async (e) => {
+    state.settings.alertsEnabled = e.target.checked;
+    document.getElementById('alertsOptions').style.display = state.settings.alertsEnabled ? 'block' : 'none';
+    await saveSettingsAndSync();
+  };
+
+  document.getElementById('sharedLeadInput').onchange = async (e) => {
+    let v = parseInt(e.target.value, 10);
+    if(isNaN(v) || v < 1) v = 1;
+    e.target.value = v;
+    state.settings.alertLeadMinutes = v;
+    await saveSettingsAndSync();
+  };
+
+  styleGroup.querySelectorAll('input[name="reminderStyle"]').forEach(r => {
+    r.onchange = async (e) => { state.settings.reminderStyle = e.target.value; await saveSettingsAndSync(); };
+  });
+  athanGroup.querySelectorAll('input[name="athanMode"]').forEach(r => {
+    r.onchange = async (e) => { state.settings.athanMode = e.target.value; await saveSettingsAndSync(); };
+  });
+}
+
+function openAbout(){
+  document.getElementById('aboutTitle').textContent = t('aboutTitle');
+  document.getElementById('aboutPurpose').textContent = t('aboutPurpose');
+  document.getElementById('aboutHadith').textContent = t('aboutHadith');
+  document.getElementById('aboutHadithCitation').textContent = t('aboutHadithCitation');
+  document.getElementById('aboutAdvice').textContent = t('aboutAdvice');
+  document.getElementById('closeAboutBtn').textContent = t('done');
+  document.getElementById('aboutModal').classList.add('show');
+}
+function closeAbout(){ document.getElementById('aboutModal').classList.remove('show'); }
+
+// ---------- UI ----------
+function showToast(msg, isErr){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('err', !!isErr);
+  el.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => el.classList.remove('show'), isErr ? 2600 : 1600);
+}
+function fmtTime(d){
+  if(!d) return '—';
+  return d.toLocaleTimeString(t('locale'), {hour:'2-digit', minute:'2-digit'});
+}
+function renderDate(){
+  const fmt = new Intl.DateTimeFormat(t('locale'), { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  document.getElementById('todayLabel').textContent = fmt.format(new Date());
+  const locLine = document.getElementById('locLine');
+  if(state.locationName){
+    locLine.textContent = t('locNamed')(state.locationName);
+  } else {
+    locLine.textContent = LOCATION.source === 'gps' ? t('locGps') : t('locDefault');
+  }
+}
+function renderStats(){
+  const week = computeStats(7);
+  const month = computeStats(30);
+  function apply(prefix, s){
+    const pctEl = document.getElementById(prefix+'Pct');
+    const barEl = document.getElementById(prefix+'Bar');
+    const fracEl = document.getElementById(prefix+'Frac');
+    if(s.total === 0){ pctEl.textContent = '—'; barEl.style.width = '0%'; fracEl.textContent = ''; }
+    else {
+      pctEl.textContent = s.pct.toLocaleString(t('locale')) + '%';
+      barEl.style.width = s.pct + '%';
+      fracEl.textContent = t('statsFrac')(s.done.toLocaleString(t('locale')), s.total.toLocaleString(t('locale')));
+    }
+  }
+  apply('week', week);
+  apply('month', month);
+}
+function renderToday(bounds){
+  const now = new Date();
+  const list = document.getElementById('todayList');
+  list.innerHTML = '';
+  PRAYER_ORDER.forEach(id => {
+    const b = bounds.find(x => x.id === id);
+    const status = statusOf(b, now);
+    const row = document.createElement('div');
+    row.className = 'prayer-row ' + status;
+    const statusText = status === 'active' ? t('statusActive') : (status === 'upcoming' ? t('statusUpcoming') : (status === 'missed' ? t('statusMissed') : t('statusDone')));
+    const btnLabel = status === 'missed' ? t('btnMissed') : (status === 'upcoming' ? t('btnUpcoming') : t('btnDone'));
+    row.innerHTML = `
+      <div class="prayer-info">
+        <span class="prayer-name">${prayerName(id)}</span>
+        <span class="prayer-time">${fmtTime(b.start)}</span>
+        <span class="prayer-status ${status}">${statusText}</span>
+      </div>
+      <button class="check-btn ${status}" data-id="${id}" ${status==='upcoming' ? 'disabled' : ''}>${btnLabel}</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.check-btn:not(.upcoming)').forEach(btn => {
+    btn.addEventListener('click', () => toggleDone(btn.dataset.id, bounds));
+  });
+}
+function renderMissed(){
+  const list = document.getElementById('missedList');
+  list.innerHTML = '';
+  let total = 0;
+  PRAYER_ORDER.forEach(id => {
+    const n = state.missed[id];
+    total += n;
+    const row = document.createElement('div');
+    row.className = 'missed-row';
+    row.innerHTML = `
+      <span class="prayer-name">${prayerName(id)}</span>
+      <div class="missed-left">
+        <div class="steps">
+          <button class="step-btn" data-id="${id}" data-op="dec">−</button>
+          <span class="count ${n === 0 ? 'zero' : ''}">${n}</span>
+          <button class="step-btn" data-id="${id}" data-op="inc">+</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+  document.getElementById('totalMissed').textContent = total;
+  list.querySelectorAll('.step-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id, op = btn.dataset.op;
+      if(op === 'dec'){
+        if(decrementMissed(id)){ showToast(t('toastQadaAccepted')); playChime(); vibrateShort(); }
+      } else {
+        incrementMissed(id, null);
+      }
+      await persist();
+      renderMissed();
+    });
+  });
+}
+function renderBacklogCard(){
+  const holder = document.getElementById('backlogCard');
+  if(state.backlogPrompted){ holder.innerHTML = ''; return; }
+  const inputsHtml = PRAYER_ORDER.map(id => `
+    <div class="backlog-item">
+      <span class="prayer-name">${prayerName(id)}</span>
+      <input type="number" min="0" inputmode="numeric" data-id="${id}" value="0">
+    </div>
+  `).join('');
+  holder.innerHTML = `
+    <div class="card">
+      <p class="card-title">${t('backlogTitle')}</p>
+      <p class="card-note">${t('backlogNote')}</p>
+      <div class="backlog-inputs">${inputsHtml}</div>
+      <div class="backlog-actions">
+        <button class="ghost-btn" id="skipBacklog">${t('skip')}</button>
+        <button class="primary-btn" id="saveBacklog">${t('save')}</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('skipBacklog').addEventListener('click', async () => {
+    state.backlogPrompted = true; renderBacklogCard(); await persist();
+  });
+  document.getElementById('saveBacklog').addEventListener('click', async () => {
+    holder.querySelectorAll('input').forEach(inp => {
+      const val = parseInt(inp.value, 10);
+      if(!isNaN(val) && val > 0){ for(let k=0;k<val;k++) incrementMissed(inp.dataset.id, null); }
+    });
+    state.backlogPrompted = true;
+    renderBacklogCard(); renderMissed();
+    await persist();
+    showToast(t('toastSaved'));
+  });
+}
+function tick(){
+  const now = new Date();
+  const { bounds, changed } = getBounds(now);
+  const changed2 = processElapsedWindows(bounds, now);
+  renderDate();
+  renderStats();
+  renderToday(bounds);
+  renderMissed();
+  if(changed || changed2) persist();
+  if(changed){
+    pushScheduleToNative();
+    if(LOCATION){
+      refreshOfficialTimes(now, LOCATION.lat, LOCATION.lng).then(got => {
+        if(got){ tick(); pushScheduleToNative(); }
+      });
+    }
+  }
+}
+
+async function init(){
+  state = await loadState();
+  if(!state) state = defaultState();
+  applyThemeAndLang();
+  tryLoadCustomChime();
+  LOCATION = await resolveLocation();
+  renderBacklogCard();
+  tick();
+  reconcileFromNative();
+  tick();
+  await persist();
+  setInterval(tick, 60000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden){ reconcileFromNative(); tick(); } });
+
+  document.getElementById('syncBtn').addEventListener('click', syncNow);
+  document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+  document.getElementById('langBtn').addEventListener('click', toggleLang);
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+  document.getElementById('settingsModal').addEventListener('click', (e) => {
+    if(e.target.id === 'settingsModal') closeSettings();
+  });
+  document.getElementById('aboutBtn').addEventListener('click', openAbout);
+  document.getElementById('closeAboutBtn').addEventListener('click', closeAbout);
+  document.getElementById('aboutModal').addEventListener('click', (e) => {
+    if(e.target.id === 'aboutModal') closeAbout();
+  });
+
+  // A soft click for every interactive control tapped in the app - general UI
+  // feedback, separate from the specific "accepted" chime for prayers/qada.
+  document.body.addEventListener('click', (e) => {
+    if(e.target.closest('button, input[type="radio"], input[type="checkbox"]')) playTick();
+  });
+
+  if(!state.locationName) refreshLocationName();
+  refreshOfficialTimes(new Date(), LOCATION.lat, LOCATION.lng).then(got => {
+    if(got){ tick(); pushScheduleToNative(); }
+  });
+
+  pushSettingsToNative();
+  pushScheduleToNative();
+}
+
+init();
+</script>
+</body>
+</html>

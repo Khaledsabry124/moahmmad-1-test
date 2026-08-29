@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.QadaTracker" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#0E2027</item>
+        <item name="android:windowBackground">#0E2027</item>
+    </style>
+</resources>
